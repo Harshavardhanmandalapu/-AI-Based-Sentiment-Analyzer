@@ -1,0 +1,34 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: sentimentlab-mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - sentimentlab-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: sentimentlab-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017
+      MONGO_DB_NAME: sentiment_analyzer
+      MONGO_COLLECTION: analyses
+      MODEL_NAME: cardiffnlp/twitter-roberta-base-sentiment-latest
+      MODEL_DEVICE: auto
+      SECRET_KEY: change-this-before-deployment
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+volumes:
+  sentimentlab-mongo-data:
